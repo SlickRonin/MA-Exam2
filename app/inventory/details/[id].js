@@ -40,7 +40,7 @@ export default function ItemDetailScreen() {
   };
 
   const handleEditItem = () => {
-    router.push(`/item/edit/${id}`);
+    router.push(`/inventory/edit/${id}`);
   };
 
   const handleDeleteItem = () => {
