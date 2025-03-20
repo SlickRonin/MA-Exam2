@@ -1,4 +1,3 @@
-// app/_layout.js
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { initDatabase } from './database/db';
@@ -21,26 +20,25 @@ export default function Layout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Recipe Planner',
+          title: 'Home Inventory',
         }}
       />
       <Stack.Screen
-        name="recipe/details/[id]"
+        name="inventory/details/[id]"
         options={{
-          title: 'Recipe Details',
+          title: 'Item Details',
         }}
       />
       <Stack.Screen
-        name="recipe/add"
+        name="inventory/add"
         options={{
-          title: 'Add New Recipe',
-          // presentation: 'modal', // if you want to make the presentation a modal instead of a stack
+          title: 'Add New Item',
         }}
       />
       <Stack.Screen
-        name="recipe/edit/[id]"
+        name="inventory/edit/[id]"
         options={{
-          title: 'Edit Recipe',
+          title: 'Edit Item',
         }}
       />
     </Stack>

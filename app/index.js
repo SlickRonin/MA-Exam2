@@ -1,4 +1,3 @@
-// app/index.js
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -8,35 +7,33 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getRecipes, initDatabase } from './database/db';
+import { getItems, initDatabase } from './database/db';
 
 export default function HomeScreen() {
-  initDatabase() // This is important to show that the database is initalized before the tables are called.
-  const [recipes, setRecipes] = useState([]);
-  const [filteredRecipes, setFilteredRecipes] = useState([]);
+  // Initialize database before any tables are called.
+  initDatabase();
+  
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // useEffect - This useEffect is designed to load recipe data when the component first mounts.
+  // Load inventory items when the component first mounts
   useEffect(() => {
-    loadRecipes();
-  }, []); // The empty array as the second argument means this effect will only run once after the initial render of the component
+    loadItems();
+  }, []);
 
-  //Synchronous operations block execution until they complete
-  //API calls, file operations, and database queries take unpredictable amounts of time
-  // that's why we use async. We need to use try catch because it is outside the scope of the system
-  const loadRecipes = async () => {
+  const loadItems = async () => {
     try {
-      setLoading(true); // Similar to a session variable
-      const recipesData = await getRecipes(); //makes an asynchronous call to get recipe data.
-      setRecipes(recipesData);
-      setFilteredRecipes(recipesData);
+      setLoading(true);
+      const itemsData = await getItems();
+      setItems(itemsData);
+      setFilteredItems(itemsData);
     } catch (error) {
-      console.error('Error loading recipes:', error);
+      console.error('Error loading items:', error);
     } finally {
       setLoading(false);
     }
@@ -45,35 +42,35 @@ export default function HomeScreen() {
   const handleSearch = (text) => {
     setSearchTerm(text);
     if (text) {
-      const filtered = recipes.filter(
-        recipe => 
-          recipe.name.toLowerCase().includes(text.toLowerCase()) ||
-          recipe.cuisine_type.toLowerCase().includes(text.toLowerCase())
+      const filtered = items.filter(
+        item =>
+          item.name.toLowerCase().includes(text.toLowerCase()) ||
+          item.category.toLowerCase().includes(text.toLowerCase())
       );
-      setFilteredRecipes(filtered);
+      setFilteredItems(filtered);
     } else {
-      setFilteredRecipes(recipes);
+      setFilteredItems(items);
     }
   };
 
-  const navigateToRecipeDetail = (id) => {
-    router.push(`/recipe/details/${id}`);
+  const navigateToItemDetail = (id) => {
+    router.push(`/inventory/details/${id}`);
   };
 
-  const navigateToAddRecipe = () => {
-    router.push('/recipe/add');
+  const navigateToAddItem = () => {
+    router.push('/inventory/add');
   };
 
-  const renderRecipeItem = ({ item }) => (
+  const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={styles.recipeCard}
-      onPress={() => navigateToRecipeDetail(item.id)}
+      style={styles.itemCard}
+      onPress={() => navigateToItemDetail(item.id)}
     >
-      <View style={styles.recipeInfo}>
-        <Text style={styles.recipeName}>{item.name}</Text>
-        <Text style={styles.recipeDetails}>
-          {item.cuisine_type ? `${item.cuisine_type} • ` : ''}
-          {item.cooking_time ? `${item.cooking_time} mins` : 'No time specified'}
+      <View style={styles.itemInfo}>
+        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemDetails}>
+          {item.category ? `${item.category} • ` : ''}
+          {item.purchase_date ? `${item.purchase_date}` : 'No purchase date'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -84,7 +81,7 @@ export default function HomeScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search recipes..."
+          placeholder="Search items..."
           value={searchTerm}
           onChangeText={handleSearch}
           clearButtonMode="while-editing"
@@ -95,19 +92,19 @@ export default function HomeScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : (
         <>
-          {filteredRecipes.length > 0 ? (
+          {filteredItems.length > 0 ? (
             <FlatList
-              data={filteredRecipes}
-              renderItem={renderRecipeItem}
+              data={filteredItems}
+              renderItem={renderItem}
               keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.recipeList}
+              contentContainerStyle={styles.itemList}
             />
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
                 {searchTerm
-                  ? "No recipes match your search"
-                  : "No recipes yet. Add your first recipe!"}
+                  ? "No items match your search"
+                  : "No items yet. Add your first item!"}
               </Text>
             </View>
           )}
@@ -116,7 +113,7 @@ export default function HomeScreen() {
 
       <TouchableOpacity
         style={styles.addButton}
-        onPress={navigateToAddRecipe}
+        onPress={navigateToAddItem}
       >
         <Text style={styles.addButtonText}>+</Text>
       </TouchableOpacity>
@@ -145,10 +142,10 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 20,
   },
-  recipeList: {
+  itemList: {
     padding: 16,
   },
-  recipeCard: {
+  itemCard: {
     flexDirection: 'row',
     backgroundColor: 'white',
     borderRadius: 8,
@@ -160,21 +157,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
   },
-  recipeImage: {
-    width: 100,
-    height: 100,
-  },
-  recipeInfo: {
+  itemInfo: {
     flex: 1,
     padding: 12,
     justifyContent: 'center',
   },
-  recipeName: {
+  itemName: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  recipeDetails: {
+  itemDetails: {
     color: '#757575',
     fontSize: 14,
   },
