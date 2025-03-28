@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { saveItem } from '../database/db';
 
@@ -22,20 +23,44 @@ export default function AddItemScreen() {
     location: '',
     notes: ''
   });
+  const [warrantyPeriod, setWarrantyPeriod] = useState(''); // in years
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // States to control the date pickers
+  const [showPurchasePicker, setShowPurchasePicker] = useState(false);
+
+  // Helper to format dates as YYYY-MM-DD
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  // Helper to add years to a date
+  const addYears = (date, years) => {
+    const newDate = new Date(date);
+    newDate.setFullYear(newDate.getFullYear() + years);
+    return newDate;
+  };
+
+  // Update the warranty expiry date automatically when purchase_date or warrantyPeriod changes
+  useEffect(() => {
+    if (item.purchase_date && warrantyPeriod) {
+      const purchaseDate = new Date(item.purchase_date);
+      const years = parseInt(warrantyPeriod, 10);
+      if (!isNaN(years)) {
+        const expiryDate = addYears(purchaseDate, years);
+        setItem(prev => ({ ...prev, warranty_expiry: formatDate(expiryDate) }));
+      }
+    }
+  }, [item.purchase_date, warrantyPeriod]);
 
   const handleItemChange = (key, value) => {
     setItem(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSaveItem = async () => {
-    // Validate form: Item name is required
     if (!item.name.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
     }
-
     try {
       setLoading(true);
       await saveItem(item);
@@ -82,11 +107,37 @@ export default function AddItemScreen() {
           
           <View style={styles.formField}>
             <Text style={styles.label}>Purchase Date</Text>
+            <TouchableOpacity
+              onPress={() => setShowPurchasePicker(true)}
+              style={styles.dateInput}
+            >
+              <Text style={item.purchase_date ? styles.dateText : styles.placeholderText}>
+                {item.purchase_date || 'Select Purchase Date'}
+              </Text>
+            </TouchableOpacity>
+            {showPurchasePicker && (
+              <DateTimePicker
+                value={item.purchase_date ? new Date(item.purchase_date) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowPurchasePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    handleItemChange('purchase_date', formatDate(selectedDate));
+                  }
+                }}
+              />
+            )}
+          </View>
+          
+          <View style={styles.formField}>
+            <Text style={styles.label}>Warranty Period (years)</Text>
             <TextInput
               style={styles.input}
-              value={item.purchase_date}
-              onChangeText={(value) => handleItemChange('purchase_date', value)}
-              placeholder="YYYY-MM-DD"
+              value={warrantyPeriod}
+              onChangeText={(value) => setWarrantyPeriod(value)}
+              placeholder="E.g., 3"
+              keyboardType="numeric"
             />
           </View>
           
@@ -96,7 +147,7 @@ export default function AddItemScreen() {
               style={styles.input}
               value={item.warranty_expiry}
               onChangeText={(value) => handleItemChange('warranty_expiry', value)}
-              placeholder="YYYY-MM-DD"
+              placeholder="Auto-calculated or select manually"
             />
           </View>
           
@@ -181,6 +232,21 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#000'
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#999'
   },
   textArea: {
     minHeight: 80,
